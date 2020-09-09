@@ -28,7 +28,11 @@ func main() {
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
 
-const formInputName = "f"
+const (
+	formInputName = "f"
+	slackChannel  = "@grin"
+	slackUsername = "yay"
+)
 
 func handler(w http.ResponseWriter, r *http.Request) {
 	url := strings.TrimLeft(r.URL.String(), "/")
@@ -65,21 +69,13 @@ Disallow: /`))
 	}
 
 	if r.Method == http.MethodPost {
-		err := sendToSlack("@grin", "yay", "%s | *%s* %s\n%s", hostname, url, r.Header.Get("User-Agent"), r.FormValue(formInputName))
-		if err != nil {
-			log.Printf("ERROR: %v", err)
-		}
-
+		sendToSlack("%s | *%s* %s\n%s", hostname, url, r.Header.Get("User-Agent"), r.FormValue(formInputName))
 		w.Header().Set("Location", "/thank-you")
 		w.WriteHeader(http.StatusSeeOther)
 		return
 	}
 
-	err := sendToSlack("@grin", "yay", "%s | *%s* %s", hostname, url, r.Header.Get("User-Agent"))
-	if err != nil {
-		log.Printf("ERROR: %v", err)
-	}
-
+	sendToSlack("%s | *%s* %s", hostname, url, r.Header.Get("User-Agent"))
 	w.Write([]byte(strings.Replace(layout, "BODY_GOES_HERE", `
     <h1>Thanks for your feedback</h1>
 	<br>
@@ -91,10 +87,10 @@ Disallow: /`))
 `, 1)))
 }
 
-func sendToSlack(channel, username, format string, a ...interface{}) error {
+func sendToSlack(format string, a ...interface{}) {
 	if slackApi == nil {
 		log.Println("SLACK TOKEN NOT SET")
-		return nil
+		return
 	}
 
 	message := format
@@ -102,13 +98,10 @@ func sendToSlack(channel, username, format string, a ...interface{}) error {
 		message = fmt.Sprintf(format, a...)
 	}
 
-	_, _, err := slackApi.PostMessage(channel, slack.MsgOptionText(message, false), slack.MsgOptionUsername(username))
+	_, _, err := slackApi.PostMessage(slackChannel, slack.MsgOptionText(message, false), slack.MsgOptionUsername(slackUsername))
 	if err != nil {
 		log.Println("error sending to slack: " + err.Error())
-		return err
 	}
-
-	return nil
 }
 
 var layout = `
