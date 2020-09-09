@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/nlopes/slack"
 )
@@ -23,9 +24,23 @@ func main() {
 		slackApi = slack.New(slackToken)
 	}
 
-	http.HandleFunc("/", handler)
+	http.DefaultClient.Timeout = 20 * time.Second
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", handler)
+
+	srv := &http.Server{
+		Addr:    ":" + port,
+		Handler: mux,
+		//https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
+		//https://blog.cloudflare.com/exposing-go-on-the-internet/
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  120 * time.Second,
+	}
+
 	log.Println("Listening on " + port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	log.Fatal(srv.ListenAndServe())
 }
 
 const (
