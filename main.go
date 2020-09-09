@@ -1,13 +1,16 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"strings"
 
-	"github.com/lbryio/lbry.go/v2/extras/util"
+	"github.com/nlopes/slack"
 )
+
+var slackApi *slack.Client
 
 func main() {
 	port := os.Getenv("PORT")
@@ -17,7 +20,7 @@ func main() {
 
 	slackToken := os.Getenv("SLACK")
 	if slackToken != "" {
-		util.InitSlack(slackToken, "@grin", "yay")
+		slackApi = slack.New(slackToken)
 	}
 
 	http.HandleFunc("/", handler)
@@ -62,7 +65,7 @@ Disallow: /`))
 	}
 
 	if r.Method == http.MethodPost {
-		err := util.SendToSlack("%s | *%s* %s\n%s", hostname, url, r.Header.Get("User-Agent"), r.FormValue(formInputName))
+		err := sendToSlack("@grin", "yay", "%s | *%s* %s\n%s", hostname, url, r.Header.Get("User-Agent"), r.FormValue(formInputName))
 		if err != nil {
 			log.Printf("ERROR: %v", err)
 		}
@@ -72,7 +75,7 @@ Disallow: /`))
 		return
 	}
 
-	err := util.SendToSlack("%s | *%s* %s", hostname, url, r.Header.Get("User-Agent"))
+	err := sendToSlack("@grin", "yay", "%s | *%s* %s", hostname, url, r.Header.Get("User-Agent"))
 	if err != nil {
 		log.Printf("ERROR: %v", err)
 	}
@@ -86,6 +89,26 @@ Disallow: /`))
 		<p><input type="submit"></p>
 	</form>
 `, 1)))
+}
+
+func sendToSlack(channel, username, format string, a ...interface{}) error {
+	if slackApi == nil {
+		log.Println("SLACK TOKEN NOT SET")
+		return nil
+	}
+
+	message := format
+	if len(a) > 0 {
+		message = fmt.Sprintf(format, a...)
+	}
+
+	_, _, err := slackApi.PostMessage(channel, slack.MsgOptionText(message, false), slack.MsgOptionUsername(username))
+	if err != nil {
+		log.Println("error sending to slack: " + err.Error())
+		return err
+	}
+
+	return nil
 }
 
 var layout = `
