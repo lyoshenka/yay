@@ -74,7 +74,7 @@ Disallow: /`))
 		w.Write([]byte(newCSS))
 		return
 	case "thank-you":
-		w.Write([]byte(strings.Replace(layout, "BODY_GOES_HERE", `<h1>Thanks again!</h1>`, 1)))
+		w.Write([]byte(strings.Replace(layout, "BODY_GOES_HERE", `<h1>Got it. Thanks again!</h1>`, 1)))
 		return
 	}
 
@@ -92,7 +92,7 @@ Disallow: /`))
 
 	sendToSlack("%s | *%s* %s", hostname, url, r.Header.Get("User-Agent"))
 	w.Write([]byte(strings.Replace(layout, "BODY_GOES_HERE", `
-    <h1>Thanks for your feedback</h1>
+    <h1>Feedback received. Thank you 😊</h1>
 	<br>
 	<p>Is there anything you'd like to add?</p>
 	<form method="POST" action="">
