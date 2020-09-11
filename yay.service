@@ -1,0 +1,16 @@
+[Unit]
+Description=Yay
+After=network.target
+
+[Service]
+Type=simple
+Environment="PORT=8080"
+Environment="SLACK="
+User=user
+Group=user
+ExecStart=/home/user/yay
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+
