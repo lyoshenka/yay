@@ -84,7 +84,10 @@ Disallow: /`))
 	}
 
 	if r.Method == http.MethodPost {
-		sendToSlack("%s | *%s* %s\n%s", hostname, url, r.Header.Get("User-Agent"), r.FormValue(formInputName))
+		freeformFeedback := r.FormValue(formInputName)
+		if freeformFeedback != "" {
+			sendToSlack("%s | *%s* %s\n%s", hostname, url, r.Header.Get("User-Agent"), freeformFeedback)
+		}
 		w.Header().Set("Location", "/thank-you")
 		w.WriteHeader(http.StatusSeeOther)
 		return
