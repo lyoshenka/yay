@@ -79,35 +79,34 @@ Disallow: /`))
 	}
 
 	hostname, _ := os.Hostname()
-	if hostname == "" {
-		hostname = "<hostname-unknown>"
-	}
+	prefix := fmt.Sprintf("*%s* host:%s ip:%s ua:%s", url, hostname, requestIP(r), r.Header.Get("User-Agent"))
 
 	if r.Method == http.MethodPost {
 		freeformFeedback := r.FormValue(formInputName)
 		if freeformFeedback != "" {
-			sendToSlack("%s | *%s* %s\n%s", hostname, url, r.Header.Get("User-Agent"), freeformFeedback)
+			sendToSlack(prefix + "\n" + freeformFeedback)
 		}
 		w.Header().Set("Location", "/thank-you")
 		w.WriteHeader(http.StatusSeeOther)
 		return
 	}
 
-	sendToSlack("%s | *%s* %s", hostname, url, r.Header.Get("User-Agent"))
+	sendToSlack(prefix)
 	w.Write([]byte(strings.Replace(layout, "BODY_GOES_HERE", `
     <h1>Feedback received. Thank you 😊</h1>
 	<br>
 	<p>Is there anything you'd like to add?</p>
 	<form method="POST" action="">
 		<p><textarea name="`+formInputName+`" rows=8 style="width: 100%"></textarea></p>
-		<p><input type="submit"></p>
+		<p><input type="submit" value="Send Extra Feedback"/></p>
 	</form>
 `, 1)))
 }
 
 func sendToSlack(format string, a ...interface{}) {
+	log.Printf("slack: "+format+"\n", a...)
+
 	if slackApi == nil {
-		log.Println("SLACK TOKEN NOT SET")
 		return
 	}
 
