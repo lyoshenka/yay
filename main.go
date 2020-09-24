@@ -56,7 +56,16 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 	switch url {
 	case "":
-		w.Write([]byte("Yay!"))
+		w.Write(withLayout(`
+<h1>Yay! One-click Feedback</h1>
+<br>
+<p>
+  A dead-simple way to collect feedback from within newsletters and other text media.
+</p>
+<p>
+  Made by <a href="https://grin.io">Grin</a>.
+</p>
+`))
 		return
 	case "favicon.ico": // ignore these
 		return
@@ -74,7 +83,7 @@ Disallow: /`))
 		w.Write([]byte(newCSS))
 		return
 	case "thank-you":
-		w.Write([]byte(strings.Replace(layout, "BODY_GOES_HERE", `<h1>Got it. Thanks again!</h1>`, 1)))
+		w.Write(withLayout(`<h1>Got it. Thanks again!</h1>`))
 		return
 	}
 
@@ -92,15 +101,15 @@ Disallow: /`))
 	}
 
 	sendToSlack(prefix)
-	w.Write([]byte(strings.Replace(layout, "BODY_GOES_HERE", `
+	w.Write(withLayout(`
     <h1>Feedback received. Thank you 😊</h1>
 	<br>
 	<p>Is there anything you'd like to add?</p>
 	<form method="POST" action="">
-		<p><textarea name="`+formInputName+`" rows=8 style="width: 100%"></textarea></p>
+		<p><textarea name="` + formInputName + `" rows=8 style="width: 100%"></textarea></p>
 		<p><input type="submit" value="Send Extra Feedback"/></p>
 	</form>
-`, 1)))
+`))
 }
 
 func sendToSlack(format string, a ...interface{}) {
@@ -119,6 +128,10 @@ func sendToSlack(format string, a ...interface{}) {
 	if err != nil {
 		log.Println("error sending to slack: " + err.Error())
 	}
+}
+
+func withLayout(content string) []byte {
+	return []byte(strings.Replace(layout, "BODY_GOES_HERE", content, 1))
 }
 
 var layout = `
