@@ -87,6 +87,12 @@ Disallow: /`))
 		return
 	}
 
+	if isScrapeBotSpam(url) {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("404 not found"))
+		return
+	}
+
 	hostname, _ := os.Hostname()
 	prefix := fmt.Sprintf("*%s* host:%s ip:%s ua:%s", url, hostname, requestIP(r), r.Header.Get("User-Agent"))
 
@@ -110,6 +116,28 @@ Disallow: /`))
 		<p><input type="submit" value="Send Extra Feedback"/></p>
 	</form>
 `))
+}
+
+// isScrapeBotSpam tries to guess if this is a bot trawling for insecure sites
+// excluding these URLs cuts down on false hits
+// as a downside, you can't use any URLs that match this function as legit links
+func isScrapeBotSpam(url string) bool {
+	url = strings.ToLower(strings.TrimSuffix(url, "/"))
+
+	if strings.HasSuffix(url, ".php") {
+		return true
+	}
+
+	ignoredURLs := []string{
+		"phpmyadmin", "pma", "myadmin", "sql", "mysql", "mysqladmin", "database", "db",
+	}
+
+	for _, u := range ignoredURLs {
+		if u == url {
+			return true
+		}
+	}
+	return false
 }
 
 func sendToSlack(format string, a ...interface{}) {
