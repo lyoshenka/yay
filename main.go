@@ -122,7 +122,11 @@ Disallow: /`))
 // excluding these URLs cuts down on false hits
 // as a downside, you can't use any URLs that match this function as legit links
 func isScrapeBotSpam(url string) bool {
-	url = strings.ToLower(strings.TrimSuffix(url, "/"))
+	if strings.HasSuffix(url, "/") {
+		return true
+	}
+
+	url = strings.ToLower(url)
 
 	if strings.HasSuffix(url, ".php") {
 		return true
