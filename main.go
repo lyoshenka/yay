@@ -128,19 +128,24 @@ func isScrapeBotSpam(url string) bool {
 
 	url = strings.ToLower(url)
 
-	if strings.HasSuffix(url, ".php") {
-		return true
+	ignoredSubstrings := []string{
+		".php", "wp-includes", "admin",
+	}
+	for _, s := range ignoredSubstrings {
+		if strings.Contains(url, s) {
+			return true
+		}
 	}
 
 	ignoredURLs := []string{
 		"phpmyadmin", "pma", "myadmin", "sql", "mysql", "mysqladmin", "database", "db",
 	}
-
 	for _, u := range ignoredURLs {
 		if u == url {
 			return true
 		}
 	}
+
 	return false
 }
 
