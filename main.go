@@ -8,10 +8,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/didip/tollbooth"
+	"github.com/didip/tollbooth/limiter"
 	"github.com/nlopes/slack"
 )
 
 var slackApi *slack.Client
+var lmt *limiter.Limiter
 
 func main() {
 	port := os.Getenv("PORT")
@@ -23,6 +26,8 @@ func main() {
 	if slackToken != "" {
 		slackApi = slack.New(slackToken)
 	}
+
+	lmt = tollbooth.NewLimiter(1, nil)
 
 	http.DefaultClient.Timeout = 20 * time.Second
 
@@ -87,6 +92,15 @@ Disallow: /`))
 		return
 	}
 
+	httpError := tollbooth.LimitByRequest(lmt, w, r)
+	if httpError != nil {
+		//lmt.ExecOnLimitReached(w, r)
+		w.Header().Set("Content-Type", lmt.GetMessageContentType())
+		w.WriteHeader(httpError.StatusCode)
+		w.Write([]byte(httpError.Message))
+		return
+	}
+
 	if isScrapeBotSpam(url) {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("404 not found"))
@@ -129,7 +143,8 @@ func isScrapeBotSpam(url string) bool {
 	url = strings.ToLower(url)
 
 	ignoredSubstrings := []string{
-		".php", "wp-includes", "admin",
+		".php", ".env", ".cgi",
+		"wp-includes", "wp-content", "admin",
 	}
 	for _, s := range ignoredSubstrings {
 		if strings.Contains(url, s) {
